@@ -1,0 +1,161 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: storage-volume-0
+  namespace: default
+  labels:
+    app: weblog
+    type: storage
+spec:
+  storageClassName: slow
+  capacity:
+    storage: 1Gi
+  accessModes:
+  - ReadWriteMany
+  hostPath:
+    path: "/data/pv0000"
+    type: Directory
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: storage-volume-1
+  namespace: default
+  labels:
+    app: weblog
+    type: storage
+spec:
+  storageClassName: slow
+  capacity:
+    storage: 1Gi
+  accessModes:
+  - ReadWriteMany
+  hostPath:
+    path: "/data/pv0001"
+    type: Directory
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: storage-volume-2
+  namespace: default
+  labels:
+    app: weblog
+    type: storage
+spec:
+  storageClassName: slow
+  capacity:
+    storage: 1Gi
+  accessModes:
+  - ReadWriteMany
+  hostPath:
+    path: "/data/pv0002"
+    type: Directory
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongo-secret
+  namespace: default
+  labels:
+    app: weblog
+    type: database
+type: Opaque
+data:
+  root_username: YWRtaW4=
+  root_password: UGFzc3cwcmQ=
+  keyfile: SjVCTVAzanFRbHlaQUZjWEI2QTJIb0psQnNqWkp1RzBDUGYrUTgyaHdLUFJkekFuamJ0U3RmOU8wMzZmM0FLeG4yTzNRWjFaejBJNTFPQ2FCQnRCZkhnY1E2WmZ3cU9rS0VhQ3V3Y05GVHZqZmgzdlFmRjJreTV2RGNMZ2J1azl6b0xSQ1dydGxLU0pqYWNuWXIxcGQxQ2pESUpseURqZUlBcndJUWRCRWhzRHY0d21VeDlyV2ozakxvdWwwSTZPUFFQc0VvTGZtUGN5QkRpSUFqUm9sclpkRy9OQ1dFd0ZlOHpMOTJmYTZiVjUzZEFJQk5Xa3VIV0tGaGRoOVpMTjg4c09Bd2pvc1g5SDcxR0Q0dWd6eTRsemYwWm5xSEdxeEV3dzBKRU81Zy85V2tOT0w3eFg5Vy9oWnY5a1orS0dUOW5XRGZhTEo4ZTFYTHJ1Mk56VTNxWi9kSnZPeG9mdm12U2pNWUJKNmpkbDJBcEk4S2Z5MFp5dUIrNlZ1U3ZyZGNINURlT2NnTHZOMXRMNG9ZOExYZDIzdHE1QW1lOERLb3MwcVJtSjg1azhERkQvc1RGTFlEczZVK0ZDS3ZjaW9NRlNxUUhxYWtpQk9RRGFRS29oa0RpY0hMbWJhVVoxUVh6TWVlc1BCOW1uR0V0ak9OUmc2TG1OZkpPRlIvV25taElrRjcydm94MmhlMGN1TVZpU0tFWVFEMXAxRDVCWmswamlDUUJVNkdCU2N2MXIxZERxQVNZcFdzSTM2R0lJU0pGZE5VeEJmME1nTTE4YzdSbDAyY1h2aCs1OTZuMGwyenlvK0hRUHRCbDQ0UlhqQlVMOFE1aGg5ckN1OFJGTG1yNUZVUnJaaHlZM2huNVdjeW5ZMm5Xd3pKekMxTWxBT1JPLy9CdEJrSzRDUDZINFZDS1ZyYTU5OVN6NE53ZXlwU3RMOW51b0hNYXlWLzkrT2VTc2ZmTmwxclQxKzdTTXpRREtFVDcrZWIvclVCWFFVSHhSVnZiNU5jYUJ0NkdQOEZIclR3eXA3Yi9yTzQzRlQ5dTF4Q0FEbmNvNWVXc0ZNWE1rTE90QVZLK1ZNMnZtY2hFUXFSTDduNllkT3VDd1lTTmR2aVNPU1dJdWVhUUl3enpyeENHMkpGWmFHalV6Y2pkdm9xcnFOT0RhOGpxWEZyYUF3V1EwWTNQVGZmZUFPa2RSK1diVlpFRGJBZmNxYzRxVVVyUm5XR0UxcTd1bkZDVzdiNnZGN1RBb01US1FpYXJtV2FoeCtuUmxzRzlERy9FbzJOaHVIa1hJbnhvUEgvdVBWSUcyVmFNekRDYWZpWUlhazVQNi9mOUFOTGIwRUtZczhFOTdubGpXL2hnVwo=
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-svc
+  namespace: default
+  labels:
+    app: weblog
+    type: database
+spec:
+  ports:
+  - port: 27017
+    targetPort: 27017
+  clusterIP: None
+  selector:
+    app: weblog
+    type: database
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo
+  namespace: default
+  labels:
+    app: weblog
+    type: database
+spec:
+  selector:
+    matchLabels:
+      app: weblog
+      type: database
+  serviceName: db-svc
+  replicas: 3
+  template:
+    metadata:
+      name: mongodb
+      namespace: default
+      labels:
+        app: weblog
+        type: database
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: mongodb
+        image: weblog-db:v1.0.0
+        imagePullPolicy: Never
+        args:
+        - "mongod"
+        - "--auth"
+        - "--clusterAuthMode=keyFile"
+        - "--keyFile=/home/mongodb/keyfile"
+        - "--replSet=rs0"
+        - "--bind_ip_all"
+        env:
+        - name: "MONGO_INITDB_ROOT_USERNAME"
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: root_username
+        - name: "MONGO_INITDB_ROOT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: root_password
+        - name: "MONGO_INITDB_DATABASE"
+          value: "admin"
+        volumeMounts:
+        - mountPath: /data/db
+          name: storage
+        - mountPath: /home/mongodb
+          name: secret
+      volumes:
+      - name: secret
+        secret:
+          secretName: mongo-secret
+          items:
+          - key: keyfile
+            path: keyfile
+            mode: 0700
+  volumeClaimTemplates:
+  - metadata:
+      name: storage
+    spec:
+      storageClassName: slow
+      accessModes:
+      - ReadWriteMany
+      resources:
+        requests:
+          storage: 1Gi
